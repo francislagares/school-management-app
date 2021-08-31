@@ -1,28 +1,41 @@
-import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { AssignStudentsToLessonInput } from 'src/students/students-to-lesson.input';
-import { CreateLessonInput } from './lesson.input';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
 import { LessonType } from './lesson.type';
 import { LessonsService } from './lessons.service';
+import { CreateLessonInput } from './lesson.input';
+import { AssignStudentsToLessonInput } from '../students/students-to-lesson.input';
+import { Lesson } from './lesson.entity';
+import { StudentsService } from '../students/students.service';
+import { StudentType } from 'src/students/student.type';
 
 @Resolver((of) => LessonType)
 export class LessonResolver {
-  constructor(private lessonsService: LessonsService) {}
-
-  @Query((returns) => [LessonType])
-  lessons() {
-    return this.lessonsService.getLessons();
-  }
+  constructor(
+    private lessonService: LessonsService,
+    private studentService: StudentsService,
+  ) {}
 
   @Query((returns) => LessonType)
   lesson(@Args('id') id: string) {
-    return this.lessonsService.getLesson(id);
+    return this.lessonService.getLesson(id);
+  }
+
+  @Query((returns) => [LessonType])
+  lessons() {
+    return this.lessonService.getLessons();
   }
 
   @Mutation((returns) => LessonType)
   createLesson(
     @Args('createLessonInput') createLessonInput: CreateLessonInput,
   ) {
-    return this.lessonsService.createLesson(createLessonInput);
+    return this.lessonService.createLesson(createLessonInput);
   }
 
   @Mutation((returns) => LessonType)
@@ -31,6 +44,11 @@ export class LessonResolver {
     assignStudentsToLessonInput: AssignStudentsToLessonInput,
   ) {
     const { lessonId, studentIds } = assignStudentsToLessonInput;
-    return this.lessonsService.assignStudentToLesson(lessonId, studentIds);
+    return this.lessonService.assignStudentToLesson(lessonId, studentIds);
+  }
+
+  @ResolveField((returns) => StudentType)
+  async students(@Parent() lesson: Lesson) {
+    return this.studentService.getManyStudents(lesson.students);
   }
 }
